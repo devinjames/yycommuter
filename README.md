@@ -13,7 +13,7 @@ Everything runs in the browser; settings live in `localStorage`.
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
+npm run dev      # http://localhost:1366 (listens on 0.0.0.0)
 npm test         # unit tests (Vitest)
 npm run build    # typecheck + static build into dist/
 ```
