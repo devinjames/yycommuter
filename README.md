@@ -29,6 +29,7 @@ Refresh test fixtures from the live feeds with `npx vite-node scripts/capture-fi
 | [Vehicle Positions](https://data.calgary.ca/d/am7c-qe3u) (GTFS-RT) | bus locations |
 | [Trip Updates](https://data.calgary.ca/d/gs4m-mdc2) (GTFS-RT) | route of each trip and predicted stop arrivals |
 | [Stops By Route](https://data.calgary.ca/d/pm3p-838w) (SODA) | stops near Home/Work for your routes |
+| [Calgary Transit Routes](https://data.calgary.ca/d/hpnd-riq4) (SODA) | route paths drawn on the map |
 | OpenStreetMap Nominatim | address search |
 | OpenStreetMap tiles | map |
 

@@ -3,6 +3,7 @@ import { createFeedClient, TU_ID, VP_ID, type FeedMessage } from './feeds';
 import { searchAddress } from './geocode';
 import { createMap, type BusMarkerItem } from './map';
 import { buildBuses, createTripMemory, nextArrival } from './realtime';
+import { fetchRouteShape } from './routes';
 import { fetchStopsNear, routeExists } from './stops';
 import { isConfigured, loadSettings, saveSettings } from './storage';
 import { chooseDirection, computeRouteStatus, formatEta, selectDepartureStop, sortRows, type RouteStatus } from './trip';
@@ -157,6 +158,24 @@ async function computeOnce() {
   render();
 }
 
+// ---------- route paths ----------
+
+/** Draw the selected routes' paths. Optional decoration: a route whose path fails to load is just not drawn. */
+let shapesRequest = 0;
+async function loadRouteShapes() {
+  const request = ++shapesRequest;
+  const routes = [...state.settings.routes];
+  const shapes = await Promise.all(
+    routes.map((route) =>
+      fetchRouteShape(route).then(
+        (lines) => ({ route, lines }),
+        () => ({ route, lines: [] }),
+      ),
+    ),
+  );
+  if (request === shapesRequest) map.setRoutes(shapes.filter((s) => s.lines.length));
+}
+
 // ---------- feed polling ----------
 
 async function poll() {
@@ -225,7 +244,9 @@ function showSettings() {
     { el: settingsEl, map, getUserPos: () => state.user, searchAddress, routeExists },
     (next: Settings) => {
       const refreshChanged = next.refreshSec !== state.settings.refreshSec;
+      const routesChanged = next.routes.join(',') !== state.settings.routes.join(',');
       state.settings = next;
+      if (routesChanged) void loadRouteShapes();
       saveSettings(next);
       void compute();
       if (refreshChanged) schedule();
@@ -240,3 +261,4 @@ enableSheetDrag(sheet);
 render();
 if (!isConfigured(state.settings)) showSettings();
 void poll();
+void loadRouteShapes();

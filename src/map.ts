@@ -5,10 +5,14 @@ import type { Bus, LatLon, Place, Stop } from './types';
 
 export type BusMarkerItem = { bus: Bus; label: string; dim: boolean; stale: boolean };
 
+export type RouteShape = { route: string; lines: LatLon[][] };
+
 export type MapView = {
   setUser(p: LatLon | null, accuracyM?: number): void;
   setPlaces(home: Place | null, work: Place | null): void;
   setStops(stops: Stop[]): void;
+  /** Draw each route's path in its route colour, beneath all markers. */
+  setRoutes(shapes: RouteShape[]): void;
   setBuses(items: BusMarkerItem[]): void;
   recenter(): void;
   fitTo(points: LatLon[]): void;
@@ -36,6 +40,10 @@ export function createMap(el: HTMLElement): MapView {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · Data: City of Calgary',
   }).addTo(map);
+
+  // Route lines sit above tiles but below every marker (overlayPane is 400, markers 600).
+  map.createPane('routes').style.zIndex = '350';
+  const routeLines = L.layerGroup().addTo(map);
 
   let user: { dot: L.CircleMarker; ring: L.Circle } | null = null;
   let userPos: LatLon | null = null;
@@ -83,6 +91,16 @@ export function createMap(el: HTMLElement): MapView {
         })
           .bindTooltip(esc(s.name), { direction: 'bottom', offset: [0, 10], className: 'stop-tip' })
           .addTo(stops);
+      }
+    },
+
+    setRoutes(shapes) {
+      routeLines.clearLayers();
+      for (const { route, lines } of shapes) {
+        const latlngs = lines.map((line) => line.map(ll));
+        const common = { pane: 'routes', interactive: false, lineCap: 'round', lineJoin: 'round' } as const;
+        L.polyline(latlngs, { ...common, color: '#ffffff', weight: 8, opacity: 0.85 }).addTo(routeLines);
+        L.polyline(latlngs, { ...common, color: routeColor(route), weight: 5, opacity: 0.75 }).addTo(routeLines);
       }
     },
 
