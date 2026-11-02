@@ -15,7 +15,7 @@ function mockFetch(routes: Route) {
   });
 }
 const json = (o: unknown) => () => new Response(JSON.stringify(o), { status: 200 });
-const bytes = (b: Uint8Array) => () => new Response(b, { status: 200 });
+const bytes = (b: Uint8Array) => () => new Response(b as BodyInit, { status: 200 });
 const notFound = () => new Response('', { status: 404 });
 
 describe('decodeFeed', () => {

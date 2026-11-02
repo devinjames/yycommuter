@@ -37,7 +37,8 @@ function readVarint(buf: Uint8Array, pos: number): [number, number] | null {
  * keep every entity that is fully present.
  */
 export function decodeFeed(buf: Uint8Array): FeedMessage {
-  const msg: FeedMessage = { header: null, entity: [] };
+  let header: transit_realtime.IFeedHeader | null = null;
+  const entity: transit_realtime.IFeedEntity[] = [];
   let pos = 0;
   while (pos < buf.length) {
     const tag = readVarint(buf, pos);
@@ -59,8 +60,8 @@ export function decodeFeed(buf: Uint8Array): FeedMessage {
       if (end > buf.length) break; // truncated: drop the partial field
       const slice = buf.subarray(start, end);
       try {
-        if (field === 1) msg.header = rt.FeedHeader.decode(slice);
-        else if (field === 2) msg.entity!.push(rt.FeedEntity.decode(slice));
+        if (field === 1) header = rt.FeedHeader.decode(slice);
+        else if (field === 2) entity.push(rt.FeedEntity.decode(slice));
       } catch {
         /* skip a malformed entity */
       }
@@ -69,7 +70,7 @@ export function decodeFeed(buf: Uint8Array): FeedMessage {
       break; // unsupported wire type → stop
     }
   }
-  return msg;
+  return { header: header ?? { gtfsRealtimeVersion: '' }, entity };
 }
 
 type FetchFn = (url: string, init?: RequestInit) => Promise<Response>;

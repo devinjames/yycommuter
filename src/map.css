@@ -1,0 +1,24 @@
+/* Map markers */
+.user-dot { fill: #2563eb; fill-opacity: 1; stroke: #fff; stroke-width: 3; }
+.user-ring { fill: #2563eb; fill-opacity: 0.12; stroke: #2563eb; stroke-opacity: 0.35; stroke-width: 1; }
+
+.place-icon, .pick-icon { font-size: 26px; line-height: 1; width: auto !important; height: auto !important;
+  transform: translate(-50%, -100%); filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.4)); background: none; border: 0; }
+.leaflet-marker-icon.place-icon, .leaflet-marker-icon.pick-icon { margin: 0 !important; }
+
+.stop-icon { background: none; border: 0; }
+.stop-icon span { display: grid; place-items: center; transform: translate(-50%, -50%);
+  min-width: 22px; height: 22px; padding: 0 4px; border-radius: 6px; font: 700 11px/1 system-ui, sans-serif;
+  background: #fff; color: var(--c); border: 2.5px solid var(--c); box-shadow: 0 1px 3px rgb(0 0 0 / 0.35); }
+.stop-tip { font: 600 12px system-ui, sans-serif; }
+
+.bus-icon { background: none; border: 0; }
+.bus-icon > * { position: absolute; left: 0; transform: translateX(-50%); white-space: nowrap; }
+.bus-route { top: -15px; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  background: var(--c); color: #fff; font: 800 12px/1 system-ui, sans-serif; border: 2.5px solid #fff;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.4); }
+.bus-eta { top: -44px; padding: 3px 7px; border-radius: 999px; background: #0f172a; color: #fff;
+  font: 700 12px/1.2 system-ui, sans-serif; box-shadow: 0 1px 4px rgb(0 0 0 / 0.35); }
+.bus-icon.is-dim { opacity: 0.45; }
+.bus-icon.is-stale .bus-route { filter: grayscale(1); }
+.bus-icon.is-stale .bus-eta { background: #64748b; }
