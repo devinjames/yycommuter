@@ -4,10 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0f172a" />
+    <meta name="description" content="Live Calgary Transit bus ETAs for your commute." />
     <title>YYCommuter</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="map" aria-label="Map of live buses"></div>
+    <div class="fab-stack">
+      <button id="settings-btn" class="fab" aria-label="Settings">⚙</button>
+      <button id="recenter-btn" class="fab" aria-label="Centre on my location">◎</button>
+    </div>
+    <section id="sheet" class="sheet" aria-live="polite"></section>
+    <section id="settings" class="settings" hidden></section>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

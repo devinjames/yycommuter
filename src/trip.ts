@@ -87,3 +87,10 @@ export function computeRouteStatus(
   const following = next?.level === 'red' ? (etas[1] ?? null) : null;
   return { route, stop, verified, next, following, walkMin, ...(next ? {} : { reason: 'noBuses' as const }) };
 }
+
+/** "Leave in X min" copy for a bus. */
+export function leaveText(next: BusEta, following: BusEta | null): string {
+  if (next.level === 'red') return following ? `Missed — next in ${Math.round(following.etaSec / 60)} min` : 'Missed';
+  if (next.leaveInMin < 1) return 'Leave now';
+  return `Leave in ${Math.floor(next.leaveInMin)} min`;
+}

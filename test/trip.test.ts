@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chooseDirection, computeRouteStatus, formatEta, levelFor, selectDepartureStop } from '../src/trip';
+import { chooseDirection, computeRouteStatus, formatEta, leaveText, levelFor, selectDepartureStop } from '../src/trip';
 import type { Bus, LatLon, Place, Stop } from '../src/types';
 
 const NOW = 1_793_580_000;
@@ -100,4 +100,12 @@ describe('computeRouteStatus', () => {
   it('reports noStops when there is no departure stop', () => {
     expect(computeRouteStatus('3', null, false, [], user, home, NOW)).toMatchObject({ reason: 'noStops', next: null });
   });
+});
+
+describe('leaveText', () => {
+  const eta = (leaveInMin: number, etaSec = 600) => ({ bus: bus('v', []), etaSec, leaveInMin, level: levelFor(leaveInMin) });
+  it('floors minutes to stay conservative', () => expect(leaveText(eta(3.9), null)).toBe('Leave in 3 min'));
+  it('says Leave now under a minute', () => expect(leaveText(eta(0.4), null)).toBe('Leave now'));
+  it('says Missed with the following bus ETA', () => expect(leaveText(eta(-1), eta(10, 840))).toBe('Missed — next in 14 min'));
+  it('says Missed when there is no following bus', () => expect(leaveText(eta(-1), null)).toBe('Missed'));
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FeedMessage } from '../src/feeds';
-import { buildBuses, nextArrival } from '../src/realtime';
+import { buildBuses, createTripMemory, nextArrival, normalizeTime } from '../src/realtime';
 
 const NOW = 1_793_580_000;
 
@@ -82,5 +82,46 @@ describe('nextArrival', () => {
   });
   it('returns null for a stop the trip does not visit', () => {
     expect(nextArrival(loopBus, '9999', NOW)).toBeNull();
+  });
+});
+
+describe('normalizeTime', () => {
+  it('leaves plausible times alone', () => expect(normalizeTime(NOW + 600, NOW)).toBe(NOW + 600));
+  it('shifts a time published one day ahead back to today', () => expect(normalizeTime(NOW + 86400 + 600, NOW)).toBe(NOW + 600));
+  it('shifts a time published one day behind forward', () => expect(normalizeTime(NOW - 86400 + 600, NOW)).toBe(NOW + 600));
+  it('drops garbage times like epoch zero', () => expect(normalizeTime(0, NOW)).toBeNull());
+  it('returns the time unchanged without a reference', () => expect(normalizeTime(NOW + 86400, null)).toBe(NOW + 86400));
+});
+
+describe('buildBuses time normalisation', () => {
+  it('corrects next-day trip-update times using the feed header timestamp', () => {
+    const msg = { header: { gtfsRealtimeVersion: '2.0', timestamp: NOW }, entity: [tripUpdate('t3', '3', [['1001', 1, NOW + 86400 + 300], ['1002', 2, 0]])] } as FeedMessage;
+    const [bus] = buildBuses(vp(vehicle('t3', 'v1')), msg, ['3']);
+    expect(bus.stopEtas.get('1001')).toEqual([{ seq: 1, time: NOW + 300 }]);
+    expect(bus.stopEtas.has('1002')).toBe(false);
+  });
+});
+
+describe('createTripMemory', () => {
+  const feed = (ts: number, ...e: unknown[]) => ({ header: { gtfsRealtimeVersion: '2.0', timestamp: ts }, entity: e }) as FeedMessage;
+  it('keeps a trip that disappears from a later (truncated) feed', () => {
+    const mem = createTripMemory();
+    mem.merge(feed(NOW, tripUpdate('t3', '3', [['1001', 1, NOW + 600]])), NOW);
+    const merged = mem.merge(feed(NOW + 30, tripUpdate('t36', '36', [['2002', 1, NOW + 600]])), NOW + 30);
+    expect(merged.entity!.map((e) => e.tripUpdate!.trip!.tripId).sort()).toEqual(['t3', 't36']);
+    expect(Number(merged.header!.timestamp)).toBe(NOW + 30);
+  });
+  it('prefers the newest copy of a trip', () => {
+    const mem = createTripMemory();
+    mem.merge(feed(NOW, tripUpdate('t3', '3', [['1001', 1, NOW + 600]])), NOW);
+    const merged = mem.merge(feed(NOW + 30, tripUpdate('t3', '3', [['1001', 1, NOW + 660]])), NOW + 30);
+    expect(merged.entity).toHaveLength(1);
+    expect(Number(merged.entity![0].tripUpdate!.stopTimeUpdate![0].arrival!.time)).toBe(NOW + 660);
+  });
+  it('forgets trips not seen for more than 15 minutes', () => {
+    const mem = createTripMemory();
+    mem.merge(feed(NOW, tripUpdate('t3', '3', [['1001', 1, NOW + 600]])), NOW);
+    const merged = mem.merge(feed(NOW + 901), NOW + 901);
+    expect(merged.entity).toHaveLength(0);
   });
 });
