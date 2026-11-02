@@ -93,8 +93,16 @@ export function renderStatus(el: HTMLElement, m: StatusModel, h: StatusHandlers)
 export function enableSheetDrag(el: HTMLElement): void {
   let startY: number | null = null;
   el.addEventListener('pointerdown', (e) => {
-    if ((e.target as HTMLElement).closest('[data-handle], .sheet-head')) startY = e.clientY;
+    const target = e.target as HTMLElement;
+    if (!target.closest('[data-handle], .sheet-head')) return;
+    startY = e.clientY;
+    try {
+      target.setPointerCapture?.(e.pointerId);
+    } catch {
+      /* not capturable (synthetic event) */
+    }
   });
+  window.addEventListener('pointercancel', () => (startY = null));
   window.addEventListener('pointerup', (e) => {
     if (startY == null) return;
     const dy = e.clientY - startY;
@@ -112,7 +120,11 @@ export type SettingsDeps = {
   routeExists(route: string): Promise<boolean>;
 };
 
+/** Teardown for the currently open settings sheet, so reopening never leaves a live pin behind. */
+let closeActive: (() => void) | null = null;
+
 export function openSettings(initial: Settings, deps: SettingsDeps, onChange: (s: Settings) => void): void {
+  closeActive?.();
   const { el } = deps;
   let s: Settings = structuredClone(initial);
   let results: { which: 'home' | 'work'; places: Place[] } | null = null;
@@ -126,6 +138,8 @@ export function openSettings(initial: Settings, deps: SettingsDeps, onChange: (s
   };
   const close = () => {
     picking?.stop();
+    picking = null;
+    if (closeActive === close) closeActive = null;
     el.hidden = true;
     document.body.classList.remove('settings-open', 'picking');
   };
@@ -269,6 +283,7 @@ export function openSettings(initial: Settings, deps: SettingsDeps, onChange: (s
     }
   };
 
+  closeActive = close;
   el.hidden = false;
   document.body.classList.add('settings-open');
   render();

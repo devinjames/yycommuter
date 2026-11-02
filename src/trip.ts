@@ -84,7 +84,8 @@ export function computeRouteStatus(
   }
   etas.sort((a, b) => a.etaSec - b.etaSec);
   const next = etas[0] ?? null;
-  const following = next?.level === 'red' ? (etas[1] ?? null) : null;
+  // When the next bus can't be caught, point at the first one that can.
+  const following = next?.level === 'red' ? (etas.find((e) => e.level !== 'red') ?? null) : null;
   return { route, stop, verified, next, following, walkMin, ...(next ? {} : { reason: 'noBuses' as const }) };
 }
 
@@ -93,4 +94,13 @@ export function leaveText(next: BusEta, following: BusEta | null): string {
   if (next.level === 'red') return following ? `Missed — next in ${Math.round(following.etaSec / 60)} min` : 'Missed';
   if (next.leaveInMin < 1) return 'Leave now';
   return `Leave in ${Math.floor(next.leaveInMin)} min`;
+}
+
+/** Order status rows by when you can actually catch a bus; routes with nothing catchable go last. */
+export function sortRows(rows: RouteStatus[]): RouteStatus[] {
+  const rank = (r: RouteStatus) => {
+    const catchable = r.next && r.next.level !== 'red' ? r.next : r.following;
+    return catchable?.etaSec ?? (r.next ? Number.MAX_SAFE_INTEGER / 2 : Number.POSITIVE_INFINITY);
+  };
+  return [...rows].sort((a, b) => rank(a) - rank(b));
 }

@@ -5,7 +5,7 @@ import { createMap, type BusMarkerItem } from './map';
 import { buildBuses, createTripMemory, nextArrival } from './realtime';
 import { fetchStopsNear, routeExists } from './stops';
 import { isConfigured, loadSettings, saveSettings } from './storage';
-import { chooseDirection, computeRouteStatus, formatEta, selectDepartureStop, type RouteStatus } from './trip';
+import { chooseDirection, computeRouteStatus, formatEta, selectDepartureStop, sortRows, type RouteStatus } from './trip';
 import type { Direction, LatLon, Settings } from './types';
 import { enableSheetDrag, openSettings, renderStatus } from './ui';
 
@@ -138,8 +138,7 @@ async function computeOnce() {
   );
   state.stopsError = stopsError;
 
-  const rank = (r: RouteStatus) => r.next?.etaSec ?? Number.POSITIVE_INFINITY;
-  state.rows = rows.sort((a, b) => rank(a) - rank(b));
+  state.rows = sortRows(rows);
 
   const stopFor = new Map(rows.filter((r) => r.stop).map((r) => [r.route, r.stop!]));
   const dataStale = state.dataTime == null || now - state.dataTime > STALE_SEC;

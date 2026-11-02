@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chooseDirection, computeRouteStatus, formatEta, leaveText, levelFor, selectDepartureStop } from '../src/trip';
+import { chooseDirection, computeRouteStatus, formatEta, leaveText, levelFor, selectDepartureStop, sortRows } from '../src/trip';
 import type { Bus, LatLon, Place, Stop } from '../src/types';
 
 const NOW = 1_793_580_000;
@@ -108,4 +108,22 @@ describe('leaveText', () => {
   it('says Leave now under a minute', () => expect(leaveText(eta(0.4), null)).toBe('Leave now'));
   it('says Missed with the following bus ETA', () => expect(leaveText(eta(-1), eta(10, 840))).toBe('Missed — next in 14 min'));
   it('says Missed when there is no following bus', () => expect(leaveText(eta(-1), null)).toBe('Missed'));
+});
+
+describe('missed-bus handling', () => {
+  const S = stop('S', home);
+  const user = north(home, 770); // ≈ 12 min walk
+  const buses = [bus('b3', [['S', 1, NOW + 180]]), bus('b8', [['S', 1, NOW + 480]]), bus('b15', [['S', 1, NOW + 900]])];
+
+  it('offers the first catchable bus, not merely the second one', () => {
+    const r = computeRouteStatus('3', S, true, buses, user, home, NOW);
+    expect(r.next!.bus.vehicleId).toBe('b3');
+    expect(r.following!.bus.vehicleId).toBe('b15');
+  });
+  it('ranks routes by their first catchable bus', () => {
+    const missed = computeRouteStatus('3', S, true, buses, user, home, NOW); // catchable in 15
+    const other = computeRouteStatus('3', S, true, [bus('x', [['S', 1, NOW + 840]])], user, home, NOW); // catchable in 14
+    const none = computeRouteStatus('3', S, true, [], user, home, NOW);
+    expect(sortRows([none, missed, other])).toEqual([other, missed, none]);
+  });
 });
